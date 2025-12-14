@@ -63,6 +63,12 @@ public class GalleryApplication extends Application {
         stage.setWidth(visualBounds.getWidth());
         stage.setHeight(visualBounds.getHeight());
 
+        // Save session on window close
+        stage.setOnCloseRequest(event -> {
+            System.out.println("Saving session before exit...");
+            controller.saveCurrentSession();
+        });
+
         stage.show();
     }
 

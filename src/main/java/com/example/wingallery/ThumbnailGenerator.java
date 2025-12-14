@@ -39,18 +39,60 @@ public class ThumbnailGenerator {
     public static CompletableFuture<Image> generateVideoThumbnail(File file) {
         CompletableFuture<Image> future = new CompletableFuture<>();
         
-        // Try ffmpeg first (more reliable for various codecs)
+        // Try JavaFX MediaPlayer first (bundled with app)
+        tryJavaFXThumbnail(file, future);
+        
+        // Add timeout fallback to placeholder
         CompletableFuture.runAsync(() -> {
-            Image thumbnail = tryFfmpegThumbnail(file);
-            if (thumbnail != null) {
-                future.complete(thumbnail);
-            } else {
-                // Fallback to JavaFX MediaPlayer
-                tryJavaFXThumbnail(file, future);
+            try {
+                Thread.sleep(5000); // Wait 5 seconds
+                if (!future.isDone()) {
+                    System.out.println("⚠ Timeout generating thumbnail for: " + file.getName());
+                    future.complete(createPlaceholderImage());
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         });
         
         return future;
+    }
+    
+    /**
+     * Create a placeholder image for videos that can't generate thumbnails
+     */
+    private static Image createPlaceholderImage() {
+        try {
+            // Create a simple colored rectangle as placeholder
+            javafx.scene.canvas.Canvas canvas = new javafx.scene.canvas.Canvas(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+            javafx.scene.canvas.GraphicsContext gc = canvas.getGraphicsContext2D();
+            
+            // Dark gray background
+            gc.setFill(javafx.scene.paint.Color.rgb(60, 60, 60));
+            gc.fillRect(0, 0, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+            
+            // Play icon
+            gc.setFill(javafx.scene.paint.Color.rgb(200, 200, 200));
+            double centerX = THUMBNAIL_WIDTH / 2.0;
+            double centerY = THUMBNAIL_HEIGHT / 2.0;
+            double size = 80;
+            
+            // Triangle play button
+            gc.fillPolygon(
+                new double[]{centerX - size/2, centerX + size/2, centerX - size/2},
+                new double[]{centerY - size/2, centerY, centerY + size/2},
+                3
+            );
+            
+            // Take snapshot
+            SnapshotParameters params = new SnapshotParameters();
+            params.setFill(javafx.scene.paint.Color.TRANSPARENT);
+            WritableImage placeholder = canvas.snapshot(params, null);
+            
+            return placeholder;
+        } catch (Exception e) {
+            return null;
+        }
     }
     
     /**
@@ -132,8 +174,11 @@ public class ThumbnailGenerator {
                         // Seek to 0.5 seconds to avoid black frames
                         finalMediaPlayer.seek(javafx.util.Duration.millis(500));
                     } catch (Exception e) {
+                        System.err.println("⚠ Error creating MediaView for: " + file.getName());
                         finalMediaPlayer.dispose();
-                        future.complete(null);
+                        if (!future.isDone()) {
+                            future.complete(createPlaceholderImage());
+                        }
                     }
                 });
                 
@@ -169,8 +214,11 @@ public class ThumbnailGenerator {
                 });
                 
                 mediaPlayer.setOnError(() -> {
+                    System.err.println("⚠ Media error for: " + file.getName() + " - " + finalMediaPlayer.getError());
                     finalMediaPlayer.dispose();
-                    future.complete(null);
+                    if (!future.isDone()) {
+                        future.complete(createPlaceholderImage());
+                    }
                 });
                 
                 // Timeout fallback

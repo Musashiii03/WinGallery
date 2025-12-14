@@ -36,3 +36,10 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Build artifacts ###
+dependency-reduced-pom.xml
+*.zip
+
+### Documentation (generated) ###
+FILES_OVERVIEW.md

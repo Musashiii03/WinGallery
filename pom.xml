@@ -128,8 +128,11 @@
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>
                             <noManPages>true</noManPages>
-                            <stripDebug>true</stripDebug>
+                            <stripDebug>false</stripDebug>
                             <noHeaderFiles>true</noHeaderFiles>
+                            <options>
+                                <option>--bind-services</option>
+                            </options>
                         </configuration>
                     </execution>
                 </executions>
