@@ -121,11 +121,42 @@ public class GalleryController {
         // Store header reference
         headerNode = rootPane.getTop();
 
+        // Load previous session
+        loadPreviousSession();
+
         // Update UI
         updateHeaderInfo();
         
         // Show empty state if no folders
         showEmptyStateIfNeeded();
+    }
+    
+    /**
+     * Load folders from previous session
+     */
+    private void loadPreviousSession() {
+        Set<String> savedFolders = SessionManager.loadSession();
+        
+        if (!savedFolders.isEmpty()) {
+            System.out.println("Restoring " + savedFolders.size() + " folders from previous session...");
+            
+            // Load each folder
+            for (String folderPath : savedFolders) {
+                File folder = new File(folderPath);
+                if (folder.exists() && folder.isDirectory()) {
+                    scanFolder(folder);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Save current session (called on app close)
+     */
+    public void saveCurrentSession() {
+        if (!selectedFolders.isEmpty()) {
+            SessionManager.saveSession(selectedFolders);
+        }
     }
     
     private void showEmptyStateIfNeeded() {

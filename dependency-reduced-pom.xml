@@ -76,8 +76,11 @@
               <jlinkZipName>app</jlinkZipName>
               <jlinkImageName>app</jlinkImageName>
               <noManPages>true</noManPages>
-              <stripDebug>true</stripDebug>
+              <stripDebug>false</stripDebug>
               <noHeaderFiles>true</noHeaderFiles>
+              <options>
+                <option>--bind-services</option>
+              </options>
             </configuration>
           </execution>
         </executions>
@@ -117,7 +120,6 @@
               <type>APP_IMAGE</type>
               <module>com.example.wingallery/com.example.wingallery.Launcher</module>
               <runtimeImage>target/app</runtimeImage>
-              <icon>src/main/resources/com/example/wingallery/icon.png</icon>
               <javaOptions>
                 <option>-Dfile.encoding=UTF-8</option>
               </javaOptions>
