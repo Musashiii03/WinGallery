@@ -130,9 +130,6 @@
                             <noManPages>true</noManPages>
                             <stripDebug>false</stripDebug>
                             <noHeaderFiles>true</noHeaderFiles>
-                            <options>
-                                <option>--bind-services</option>
-                            </options>
                         </configuration>
                     </execution>
                 </executions>
