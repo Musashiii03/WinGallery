@@ -1,11 +1,11 @@
 package com.example.wingallery;
 
+import java.io.IOException;
+
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
-import java.io.IOException;
 
 public class GalleryApplication extends Application {
     private boolean isMaximized = true;
@@ -43,7 +43,7 @@ public class GalleryApplication extends Application {
             );
             stage.getIcons().add(icon);
         } catch (Exception e) {
-            System.err.println("Could not load application icon: " + e.getMessage());
+            // Could not load icon
         }
 
         stage.setMinWidth(800);
@@ -65,7 +65,6 @@ public class GalleryApplication extends Application {
 
         // Save session on window close
         stage.setOnCloseRequest(event -> {
-            System.out.println("Saving session before exit...");
             controller.saveCurrentSession();
         });
 
@@ -90,7 +89,7 @@ public class GalleryApplication extends Application {
             iconView.setPreserveRatio(true);
             iconView.setSmooth(true);
         } catch (Exception e) {
-            System.err.println("Could not load title bar icon: " + e.getMessage());
+            // Could not load icon
         }
         javafx.scene.layout.HBox iconContainer = new javafx.scene.layout.HBox(iconView);
         iconContainer.setStyle("-fx-padding: 0 10 0 0;");

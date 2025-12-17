@@ -1,24 +1,39 @@
 package com.example.wingallery;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-
 import javafx.geometry.Pos;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
-
-import java.io.File;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.Comparator;
 
 public class GalleryController {
     @FXML
@@ -138,8 +153,6 @@ public class GalleryController {
         Set<String> savedFolders = SessionManager.loadSession();
         
         if (!savedFolders.isEmpty()) {
-            System.out.println("Restoring " + savedFolders.size() + " folders from previous session...");
-            
             // Load each folder
             for (String folderPath : savedFolders) {
                 File folder = new File(folderPath);
@@ -635,7 +648,6 @@ public class GalleryController {
     }
 
     private void refreshGallery() {
-        System.out.println("Refreshing gallery with " + mediaItems.size() + " items");
         applyFiltersAndSort();
 
         // Force layout update
@@ -883,8 +895,6 @@ public class GalleryController {
 
             // Error handler - only show error if video never started playing
             currentMediaPlayer.setOnError(() -> {
-                System.err.println("Error event for video: " + item.getName());
-                System.err.println("Error: " + currentMediaPlayer.getError());
 
                 // Wait a bit to see if video recovers and starts playing
                 javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(
@@ -917,7 +927,7 @@ public class GalleryController {
                                 try {
                                     java.awt.Desktop.getDesktop().open(item.getFile());
                                 } catch (Exception ex) {
-                                    System.err.println("Failed to open video externally: " + ex.getMessage());
+                                    // Failed to open externally
                                 }
                             });
 
@@ -976,7 +986,6 @@ public class GalleryController {
 
             // Trigger layout when video is ready
             currentMediaPlayer.setOnReady(() -> {
-                System.out.println("Video ready: " + item.getName());
                 videoContainer.requestLayout();
             });
 
@@ -1022,8 +1031,6 @@ public class GalleryController {
             currentMediaPlayer.setAutoPlay(true);
 
         } catch (Exception e) {
-            System.err.println("Exception setting up video viewer: " + e.getMessage());
-            e.printStackTrace();
 
             // Show error message
             VBox errorBox = new VBox(20);
@@ -1046,17 +1053,36 @@ public class GalleryController {
     private void navigateToNextMedia() {
         if (currentMediaIndex < mediaItems.size() - 1) {
             currentMediaIndex++;
-            closeFullscreenViewer();
-            showFullscreenViewer(mediaItems.get(currentMediaIndex));
+            switchToMedia(mediaItems.get(currentMediaIndex));
         }
     }
 
     private void navigateToPreviousMedia() {
         if (currentMediaIndex > 0) {
             currentMediaIndex--;
-            closeFullscreenViewer();
-            showFullscreenViewer(mediaItems.get(currentMediaIndex));
+            switchToMedia(mediaItems.get(currentMediaIndex));
         }
+    }
+    
+    private void switchToMedia(MediaItem item) {
+        // Stop current media player if exists
+        if (currentMediaPlayer != null) {
+            currentMediaPlayer.stop();
+            currentMediaPlayer.dispose();
+            currentMediaPlayer = null;
+        }
+        
+        // Clear and rebuild the fullscreen viewer content
+        fullscreenViewer.getChildren().clear();
+        
+        if (item.getType() == MediaItem.MediaType.IMAGE) {
+            setupImageViewer(fullscreenViewer, item);
+        } else {
+            setupVideoViewer(fullscreenViewer, item);
+        }
+        
+        // Ensure focus for keyboard events
+        fullscreenViewer.requestFocus();
     }
 
     private void toggleFullscreen() {

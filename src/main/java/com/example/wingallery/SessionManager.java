@@ -1,8 +1,14 @@
 package com.example.wingallery;
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Manages session persistence - saves and restores folder selections
@@ -24,7 +30,7 @@ public class SessionManager {
                 Files.createDirectories(appDir);
             }
         } catch (IOException e) {
-            System.err.println("Failed to create app directory: " + e.getMessage());
+            // Failed to create directory
         }
         
         return appDir.resolve(SESSION_FILE_NAME);
@@ -44,9 +50,8 @@ public class SessionManager {
                     writer.newLine();
                 }
             }
-            System.out.println("✓ Session saved: " + folderPaths.size() + " folders");
         } catch (IOException e) {
-            System.err.println("Failed to save session: " + e.getMessage());
+            // Failed to save session
         }
     }
     
@@ -58,7 +63,6 @@ public class SessionManager {
         Path sessionFile = getSessionFilePath();
         
         if (!Files.exists(sessionFile)) {
-            System.out.println("No previous session found");
             return folderPaths;
         }
         
@@ -71,14 +75,11 @@ public class SessionManager {
                     // Only restore folders that still exist
                     if (folder.exists() && folder.isDirectory()) {
                         folderPaths.add(line);
-                    } else {
-                        System.out.println("⚠ Skipping missing folder: " + line);
                     }
                 }
             }
-            System.out.println("✓ Session loaded: " + folderPaths.size() + " folders");
         } catch (IOException e) {
-            System.err.println("Failed to load session: " + e.getMessage());
+            // Failed to load session
         }
         
         return folderPaths;
@@ -91,9 +92,8 @@ public class SessionManager {
         Path sessionFile = getSessionFilePath();
         try {
             Files.deleteIfExists(sessionFile);
-            System.out.println("✓ Session cleared");
         } catch (IOException e) {
-            System.err.println("Failed to clear session: " + e.getMessage());
+            // Failed to clear session
         }
     }
 }

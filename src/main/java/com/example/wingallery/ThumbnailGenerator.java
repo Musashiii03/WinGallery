@@ -1,15 +1,15 @@
 package com.example.wingallery;
 
+import java.io.File;
+import java.util.concurrent.CompletableFuture;
+
+import javafx.application.Platform;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
-import javafx.scene.SnapshotParameters;
-import javafx.scene.image.WritableImage;
-import javafx.application.Platform;
-
-import java.io.File;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Utility class for generating thumbnails from images and videos
@@ -34,20 +34,19 @@ public class ThumbnailGenerator {
 
     /**
      * Generate thumbnail for a video file (extracts first frame)
-     * First tries JavaFX MediaPlayer, then falls back to ffmpeg if available
+     * Uses JavaFX MediaPlayer (bundled with app)
      */
     public static CompletableFuture<Image> generateVideoThumbnail(File file) {
         CompletableFuture<Image> future = new CompletableFuture<>();
         
-        // Try JavaFX MediaPlayer first (bundled with app)
+        // Try JavaFX MediaPlayer (bundled with app)
         tryJavaFXThumbnail(file, future);
         
-        // Add timeout fallback to placeholder
+        // Add timeout fallback to placeholder (5 seconds total)
         CompletableFuture.runAsync(() -> {
             try {
-                Thread.sleep(5000); // Wait 5 seconds
+                Thread.sleep(5000);
                 if (!future.isDone()) {
-                    System.out.println("⚠ Timeout generating thumbnail for: " + file.getName());
                     future.complete(createPlaceholderImage());
                 }
             } catch (InterruptedException e) {
@@ -95,58 +94,7 @@ public class ThumbnailGenerator {
         }
     }
     
-    /**
-     * Try to generate thumbnail using ffmpeg command line tool
-     */
-    private static Image tryFfmpegThumbnail(File videoFile) {
-        try {
-            // Create temp file for thumbnail
-            File tempThumb = File.createTempFile("thumb_", ".jpg");
-            tempThumb.deleteOnExit();
-            
-            // Optimized ffmpeg command - seek BEFORE input for speed
-            ProcessBuilder pb = new ProcessBuilder(
-                "ffmpeg",
-                "-ss", "1",  // Seek to 1 second BEFORE input (much faster)
-                "-i", videoFile.getAbsolutePath(),
-                "-vframes", "1",  // Extract only 1 frame
-                "-vf", "scale=" + THUMBNAIL_WIDTH + ":" + THUMBNAIL_HEIGHT + ":force_original_aspect_ratio=decrease",
-                "-q:v", "2",  // High quality JPEG
-                "-y",  // Overwrite output
-                tempThumb.getAbsolutePath()
-            );
-            pb.redirectErrorStream(true);
-            
-            Process process = pb.start();
-            // Consume output to prevent blocking
-            java.io.BufferedReader reader = new java.io.BufferedReader(
-                new java.io.InputStreamReader(process.getInputStream())
-            );
-            String line;
-            while ((line = reader.readLine()) != null) {
-                // Consume output silently
-            }
-            
-            boolean finished = process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
-            
-            if (finished && process.exitValue() == 0 && tempThumb.exists() && tempThumb.length() > 0) {
-                Image thumbnail = new Image(tempThumb.toURI().toString());
-                if (thumbnail.getWidth() > 0 && thumbnail.getHeight() > 0) {
-                    System.out.println("✓ Thumbnail generated: " + videoFile.getName());
-                    return thumbnail;
-                }
-            } else if (!finished) {
-                process.destroyForcibly();
-                System.out.println("✗ Timeout: " + videoFile.getName());
-            }
-        } catch (java.io.IOException e) {
-            System.out.println("✗ ffmpeg not found - install ffmpeg to enable video thumbnails");
-        } catch (Exception e) {
-            System.out.println("✗ Error: " + videoFile.getName() + " - " + e.getMessage());
-        }
-        return null;
-    }
-    
+
     /**
      * Try to generate thumbnail using JavaFX MediaPlayer
      */
@@ -171,10 +119,28 @@ public class ThumbnailGenerator {
                         mediaView.setPreserveRatio(true);
                         mediaViewHolder[0] = mediaView;
                         
-                        // Seek to 0.5 seconds to avoid black frames
-                        finalMediaPlayer.seek(javafx.util.Duration.millis(500));
+                        // Try to take snapshot immediately without seeking
+                        Platform.runLater(() -> {
+                            try {
+                                if (!snapshotTaken[0] && mediaViewHolder[0] != null) {
+                                    snapshotTaken[0] = true;
+                                    SnapshotParameters params = new SnapshotParameters();
+                                    WritableImage snapshot = mediaViewHolder[0].snapshot(params, null);
+                                    
+                                    if (snapshot != null && snapshot.getWidth() > 0 && snapshot.getHeight() > 0) {
+                                        future.complete(snapshot);
+                                        finalMediaPlayer.dispose();
+                                    } else {
+                                        future.complete(createPlaceholderImage());
+                                        finalMediaPlayer.dispose();
+                                    }
+                                }
+                            } catch (Exception ex) {
+                                future.complete(createPlaceholderImage());
+                                finalMediaPlayer.dispose();
+                            }
+                        });
                     } catch (Exception e) {
-                        System.err.println("⚠ Error creating MediaView for: " + file.getName());
                         finalMediaPlayer.dispose();
                         if (!future.isDone()) {
                             future.complete(createPlaceholderImage());
@@ -182,52 +148,20 @@ public class ThumbnailGenerator {
                     }
                 });
                 
-                // Listen for when seeking is complete
-                mediaPlayer.currentTimeProperty().addListener((obs, oldTime, newTime) -> {
-                    if (!snapshotTaken[0] && newTime.toMillis() >= 400 && mediaViewHolder[0] != null) {
-                        snapshotTaken[0] = true;
-                        
-                        // Delay to ensure frame is rendered
-                        javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(javafx.util.Duration.millis(300));
-                        pause.setOnFinished(e -> {
-                            try {
-                                if (mediaViewHolder[0] != null) {
-                                    SnapshotParameters params = new SnapshotParameters();
-                                    WritableImage snapshot = mediaViewHolder[0].snapshot(params, null);
-                                    
-                                    if (snapshot != null && snapshot.getWidth() > 0 && snapshot.getHeight() > 0) {
-                                        future.complete(snapshot);
-                                    } else {
-                                        future.complete(null);
-                                    }
-                                } else {
-                                    future.complete(null);
-                                }
-                            } catch (Exception ex) {
-                                future.complete(null);
-                            } finally {
-                                finalMediaPlayer.dispose();
-                            }
-                        });
-                        pause.play();
-                    }
-                });
-                
                 mediaPlayer.setOnError(() -> {
-                    System.err.println("⚠ Media error for: " + file.getName() + " - " + finalMediaPlayer.getError());
                     finalMediaPlayer.dispose();
                     if (!future.isDone()) {
                         future.complete(createPlaceholderImage());
                     }
                 });
                 
-                // Timeout fallback
+                // Timeout fallback (4 seconds for JavaFX attempt)
                 MediaPlayer timeoutPlayer = mediaPlayer;
-                javafx.animation.PauseTransition timeout = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(3));
+                javafx.animation.PauseTransition timeout = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(4));
                 timeout.setOnFinished(e -> {
                     if (!future.isDone()) {
                         timeoutPlayer.dispose();
-                        future.complete(null);
+                        future.complete(createPlaceholderImage());
                     }
                 });
                 timeout.play();
@@ -236,7 +170,9 @@ public class ThumbnailGenerator {
                 if (mediaPlayer != null) {
                     mediaPlayer.dispose();
                 }
-                future.complete(null);
+                if (!future.isDone()) {
+                    future.complete(createPlaceholderImage());
+                }
             }
         });
     }
