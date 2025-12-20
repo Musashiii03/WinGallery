@@ -1,4 +1,4 @@
-package com.example.wingallery;
+package com.example.pixz;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -148,7 +148,7 @@ public class GalleryController {
         // Show empty state if no folders
         showEmptyStateIfNeeded();
     }
-    
+
     /**
      * Setup scroll past end functionality
      * Adds extra padding at bottom so user can scroll past the last item
@@ -198,7 +198,7 @@ public class GalleryController {
         if (mediaItems.isEmpty()) {
             // Create empty state UI centered in viewport
             StackPane emptyStateContainer = new StackPane();
-            emptyStateContainer.setStyle("-fx-background-color: #0b0e14;");
+            emptyStateContainer.setStyle("-fx-background-color: #000000;");
 
             VBox emptyState = new VBox(20);
             emptyState.setAlignment(Pos.CENTER);
@@ -215,14 +215,14 @@ public class GalleryController {
 
             Button addFolderBtn = new Button("+ Add Folder");
             addFolderBtn.setStyle(
-                    "-fx-background-color: #e6b450; -fx-text-fill: black; -fx-font-size: 16px; -fx-padding: 12 24; -fx-background-radius: 8; -fx-cursor: hand;");
+                    "-fx-background-color: #3f4865; -fx-text-fill: white; -fx-font-size: 16px; -fx-padding: 12 24; -fx-background-radius: 8; -fx-cursor: hand;");
             addFolderBtn.setOnAction(e -> onFolderLocationClick());
 
             // Hover effect
             addFolderBtn.setOnMouseEntered(e -> addFolderBtn.setStyle(
-                    "-fx-background-color: #f0c060; -fx-text-fill: black; -fx-font-size: 16px; -fx-padding: 12 24; -fx-background-radius: 8; -fx-cursor: hand;"));
+                    "-fx-background-color: #4f5875; -fx-text-fill: white; -fx-font-size: 16px; -fx-padding: 12 24; -fx-background-radius: 8; -fx-cursor: hand;"));
             addFolderBtn.setOnMouseExited(e -> addFolderBtn.setStyle(
-                    "-fx-background-color: #e6b450; -fx-text-fill: black; -fx-font-size: 16px; -fx-padding: 12 24; -fx-background-radius: 8; -fx-cursor: hand;"));
+                    "-fx-background-color: #3f4865; -fx-text-fill: white; -fx-font-size: 16px; -fx-padding: 12 24; -fx-background-radius: 8; -fx-cursor: hand;"));
 
             emptyState.getChildren().addAll(emptyIcon, emptyTitle, emptySubtitle, addFolderBtn);
             emptyStateContainer.getChildren().add(emptyState);
@@ -340,28 +340,73 @@ public class GalleryController {
 
     @FXML
     protected void onRefreshClick() {
-        // Rescan all folders
-        List<File> foldersToRescan = new ArrayList<>();
-        for (String folderPath : selectedFolders) {
-            foldersToRescan.add(new File(folderPath));
-        }
+        // Collect file paths with placeholders
+        Set<String> filesToClearCache = new HashSet<>();
+        
+        // Scan current items for grey placeholders and clear their cache
+        for (MediaItem item : mediaItems) {
+            Image thumbnail = item.getThumbnail();
 
-        // Clear current media items
-        mediaItems.clear();
-
-        // Rescan each folder
-        for (File folder : foldersToRescan) {
-            if (folder.exists()) {
-                scanFolder(folder);
+            // Only check items that have thumbnails loaded
+            if (thumbnail != null) {
+                // Check if it's a placeholder (grey or black)
+                boolean isPlaceholder = ThumbnailCache.isPlaceholderImage(thumbnail);
+                if (isPlaceholder) {
+                    System.out.println("Refreshing placeholder for: " + item.getName());
+                    filesToClearCache.add(item.getFile().getAbsolutePath());
+                }
             }
         }
+        
+        // Clear cache for all placeholder files
+        for (String filePath : filesToClearCache) {
+            ThumbnailCache.removeCachedThumbnail(new File(filePath));
+        }
 
-        // Refresh the gallery
-        refreshGallery();
+        // If a specific folder is filtered, only refresh that folder
+        if (currentFolderFilter != null) {
+            File folderToRefresh = new File(currentFolderFilter);
+
+            // Keep items from other folders, only remove items from the filtered folder
+            List<MediaItem> itemsToKeep = new ArrayList<>();
+            for (MediaItem item : mediaItems) {
+                if (!item.getPath().startsWith(currentFolderFilter)) {
+                    itemsToKeep.add(item);
+                }
+            }
+
+            // Clear and restore items from other folders
+            mediaItems.clear();
+            mediaItems.addAll(itemsToKeep);
+
+            // Rescan only the filtered folder (will add new items and call refreshGallery)
+            if (folderToRefresh.exists()) {
+                scanFolder(folderToRefresh);
+            } else {
+                // Folder doesn't exist, just refresh what we have
+                refreshGallery();
+            }
+        } else {
+            // Rescan all folders - clear everything
+            List<File> foldersToRescan = new ArrayList<>();
+            for (String folderPath : selectedFolders) {
+                foldersToRescan.add(new File(folderPath));
+            }
+
+            // Clear current media items
+            mediaItems.clear();
+
+            // Rescan each folder (each will call refreshGallery when done)
+            for (File folder : foldersToRescan) {
+                if (folder.exists()) {
+                    scanFolder(folder);
+                }
+            }
+        }
     }
 
     private void updateFilterButtonStyles() {
-        String activeStyle = "-fx-background-color: #e6b450; -fx-text-fill: black; -fx-font-size: 13px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;";
+        String activeStyle = "-fx-background-color: #3f4865; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;";
         String inactiveStyle = "-fx-background-color: #2d3142; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;";
 
         allMediaButton.setStyle(currentFilter == MediaFilter.ALL ? activeStyle : inactiveStyle);
@@ -370,7 +415,7 @@ public class GalleryController {
     }
 
     private void updateFolderFilterButtonStyles() {
-        String activeStyle = "-fx-background-color: #e6b450; -fx-text-fill: black; -fx-font-size: 13px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;";
+        String activeStyle = "-fx-background-color: #3f4865; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;";
         String inactiveStyle = "-fx-background-color: #2d3142; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;";
 
         // Update All Folders button
@@ -454,7 +499,7 @@ public class GalleryController {
         if (filteredItems.isEmpty()) {
             // Show no results message centered in viewport
             StackPane noResultsContainer = new StackPane();
-            noResultsContainer.setStyle("-fx-background-color: #0b0e14;");
+            noResultsContainer.setStyle("-fx-background-color: #000000;");
 
             VBox noResultsBox = new VBox(20);
             noResultsBox.setAlignment(Pos.CENTER);
@@ -544,7 +589,7 @@ public class GalleryController {
         HBox folderCard = new HBox(10);
         folderCard.setAlignment(Pos.CENTER_LEFT);
         folderCard.setStyle(
-                "-fx-background-color: #0b0e14; -fx-padding: 10; -fx-background-radius: 8; -fx-cursor: hand;");
+                "-fx-background-color: #000000; -fx-padding: 10; -fx-background-radius: 8; -fx-cursor: hand;");
 
         Label folderLabel = new Label("📁 " + folderName);
         folderLabel.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 13px;");
@@ -572,7 +617,7 @@ public class GalleryController {
         folderCard.setOnMouseEntered(e -> folderCard.setStyle(
                 "-fx-background-color: #2d3142; -fx-padding: 10; -fx-background-radius: 8; -fx-cursor: hand;"));
         folderCard.setOnMouseExited(e -> folderCard.setStyle(
-                "-fx-background-color: #0b0e14; -fx-padding: 10; -fx-background-radius: 8; -fx-cursor: hand;"));
+                "-fx-background-color: #000000; -fx-padding: 10; -fx-background-radius: 8; -fx-cursor: hand;"));
 
         folderList.getChildren().add(folderCard);
         folderCards.put(folderPath, folderCard);
@@ -613,7 +658,7 @@ public class GalleryController {
             }
             return false;
         });
-        
+
         refreshGallery();
         updateHeaderInfo();
     }
@@ -624,7 +669,7 @@ public class GalleryController {
         CompletableFuture.runAsync(() -> {
             List<MediaItem> newItems = new ArrayList<>();
             Map<String, Integer> folderMediaCount = new HashMap<>();
-            
+
             // Scan files first (fast, no I/O)
             scanFolderRecursive(folder, newItems, folderMediaCount);
 
@@ -658,13 +703,13 @@ public class GalleryController {
 
                 refreshGallery();
                 updateHeaderInfo();
-                
+
                 // Now progressively generate thumbnails (throttled by semaphore)
                 generateThumbnailsProgressively(newItems);
             });
         });
     }
-    
+
     /**
      * Generate thumbnails progressively to avoid memory spikes
      * Thumbnails are generated with bounded thread pool and semaphore throttling
@@ -673,20 +718,20 @@ public class GalleryController {
         for (MediaItem item : items) {
             if (item.getType() == MediaItem.MediaType.IMAGE) {
                 ThumbnailGenerator.generateImageThumbnail(item.getFile())
-                    .thenAccept(thumbnail -> {
-                        if (thumbnail != null) {
-                            item.setThumbnail(thumbnail);
-                            Platform.runLater(() -> updateGalleryItem(item));
-                        }
-                    });
+                        .thenAccept(thumbnail -> {
+                            if (thumbnail != null) {
+                                item.setThumbnail(thumbnail);
+                                Platform.runLater(() -> updateGalleryItem(item));
+                            }
+                        });
             } else if (item.getType() == MediaItem.MediaType.VIDEO) {
                 ThumbnailGenerator.generateVideoThumbnail(item.getFile())
-                    .thenAccept(thumbnail -> {
-                        if (thumbnail != null) {
-                            item.setThumbnail(thumbnail);
-                            Platform.runLater(() -> updateGalleryItem(item));
-                        }
-                    });
+                        .thenAccept(thumbnail -> {
+                            if (thumbnail != null) {
+                                item.setThumbnail(thumbnail);
+                                Platform.runLater(() -> updateGalleryItem(item));
+                            }
+                        });
             }
         }
     }
@@ -741,15 +786,15 @@ public class GalleryController {
             }
         }
     }
-    
+
     private void updateCardWithThumbnail(StackPane card, MediaItem item, Image thumbnail) {
-        // Clear old ImageViews before clearing children
+        // Clear old content
         clearImageViewsRecursive(card);
-        
-        // Clear placeholder
         card.getChildren().clear();
+
+        // Reset card style
         card.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-        
+
         // If thumbnail was reclaimed by GC, reload from cache
         if (thumbnail == null) {
             thumbnail = ThumbnailCache.getCachedThumbnail(item.getFile());
@@ -757,19 +802,19 @@ public class GalleryController {
                 item.setThumbnail(thumbnail); // Restore WeakReference
             }
         }
-        
+
         if (thumbnail != null) {
             // Add thumbnail - fill cell like CSS object-fit: cover
             ImageView thumbnailView = new ImageView(thumbnail);
             thumbnailView.setPreserveRatio(true); // Don't squeeze
             thumbnailView.setSmooth(false); // Faster rendering, less memory
-            
-            // Calculate size to fill the cell (cover behavior)
+
+            // Calculate size to fill the cell (cover behavior) - 298x298
             double imageWidth = thumbnail.getWidth();
             double imageHeight = thumbnail.getHeight();
             double imageRatio = imageWidth / imageHeight;
             double cellRatio = 1.0; // Square cell
-            
+
             if (imageRatio > cellRatio) {
                 // Image is wider - fit to height, overflow width
                 thumbnailView.setFitHeight(300);
@@ -779,41 +824,41 @@ public class GalleryController {
                 thumbnailView.setFitWidth(300);
                 thumbnailView.setFitHeight(300 / imageRatio);
             }
-            
+
             // Clip to square bounds
             javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(300, 300);
             card.setClip(clip);
-            
+
             // Start invisible for fade-in animation
             thumbnailView.setOpacity(0.0);
             card.getChildren().add(thumbnailView);
-            
+
             // Add play icon overlay for videos
             if (item.getType() == MediaItem.MediaType.VIDEO) {
                 StackPane playIconContainer = new StackPane();
                 playIconContainer.setMaxSize(40, 40);
                 playIconContainer.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-background-radius: 20;");
-                
+
                 Label playIcon = new Label("▶");
                 playIcon.setStyle("-fx-text-fill: rgba(255,255,255,0.9); -fx-font-size: 16px;");
                 playIconContainer.getChildren().add(playIcon);
-                
+
                 playIconContainer.setOpacity(0.0);
                 card.getChildren().add(playIconContainer);
             }
-            
+
             // Smooth fade-in animation
             javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(
-                javafx.util.Duration.millis(200), thumbnailView);
+                    javafx.util.Duration.millis(200), thumbnailView);
             fadeIn.setFromValue(0.0);
             fadeIn.setToValue(1.0);
             fadeIn.play();
-            
+
             // Fade in play icon if present
             if (item.getType() == MediaItem.MediaType.VIDEO && card.getChildren().size() > 1) {
                 javafx.scene.Node playIconContainer = card.getChildren().get(1);
                 javafx.animation.FadeTransition playIconFade = new javafx.animation.FadeTransition(
-                    javafx.util.Duration.millis(200), playIconContainer);
+                        javafx.util.Duration.millis(200), playIconContainer);
                 playIconFade.setFromValue(0.0);
                 playIconFade.setToValue(1.0);
                 playIconFade.play();
@@ -825,34 +870,43 @@ public class GalleryController {
             placeholderIcon.setStyle("-fx-font-size: 48px;");
             card.getChildren().add(placeholderIcon);
         }
-        
+
         // Request layout update
         card.requestLayout();
     }
 
     private StackPane createMediaCard(MediaItem item) {
-        // Square thumbnail card for uniform grid
+        // Card is exactly 300x300, gap of 1px creates thin uniform spacing
         StackPane card = new StackPane();
         card.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-        card.setPrefSize(300, 300); // Larger square size
+        card.setPrefSize(300, 300);
         card.setMinSize(300, 300);
         card.setMaxSize(300, 300);
-        
+
         // Store reference to item for efficient updates
         card.setUserData(item);
 
-        if (item.getThumbnail() != null) {
+        // Try to get thumbnail - check cache if null
+        Image thumbnail = item.getThumbnail();
+        if (thumbnail == null) {
+            thumbnail = ThumbnailCache.getCachedThumbnail(item.getFile());
+            if (thumbnail != null) {
+                item.setThumbnail(thumbnail); // Restore from cache
+            }
+        }
+
+        if (thumbnail != null) {
             // Thumbnail loaded - fill cell like CSS object-fit: cover
-            ImageView thumbnailView = new ImageView(item.getThumbnail());
+            ImageView thumbnailView = new ImageView(thumbnail);
             thumbnailView.setPreserveRatio(true); // Don't squeeze
             thumbnailView.setSmooth(false); // Faster rendering, less memory
-            
-            // Calculate size to fill the cell (cover behavior)
-            double imageWidth = item.getThumbnail().getWidth();
-            double imageHeight = item.getThumbnail().getHeight();
+
+            // Calculate size to fill the cell (cover behavior) - 298x298
+            double imageWidth = thumbnail.getWidth();
+            double imageHeight = thumbnail.getHeight();
             double imageRatio = imageWidth / imageHeight;
             double cellRatio = 1.0; // Square cell
-            
+
             if (imageRatio > cellRatio) {
                 // Image is wider - fit to height, overflow width
                 thumbnailView.setFitHeight(300);
@@ -862,8 +916,8 @@ public class GalleryController {
                 thumbnailView.setFitWidth(300);
                 thumbnailView.setFitHeight(300 / imageRatio);
             }
-            
-            // Clip to square bounds
+
+            // Clip to square bounds (300x300)
             javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(300, 300);
             card.setClip(clip);
 
@@ -1382,7 +1436,7 @@ public class GalleryController {
         if (fullscreenViewer != null) {
             clearImageViewsRecursive(fullscreenViewer);
         }
-        
+
         // Clear and rebuild the fullscreen viewer content
         fullscreenViewer.getChildren().clear();
 
@@ -1434,7 +1488,7 @@ public class GalleryController {
         Stage stage = (Stage) rootPane.getScene().getWindow();
         stage.setFullScreen(false);
     }
-    
+
     /**
      * Clear all ImageViews in the gallery to release image references
      * This allows GC to reclaim memory when gallery is refreshed
@@ -1444,7 +1498,7 @@ public class GalleryController {
             clearImageViewsRecursive(node);
         }
     }
-    
+
     /**
      * Recursively clear all ImageView references in a node tree
      * Critical for memory management - releases Image references so GC can reclaim

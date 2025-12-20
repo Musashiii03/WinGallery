@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.example</groupId>
-  <artifactId>WinGallery</artifactId>
-  <name>WinGallery</name>
+  <artifactId>Pixz</artifactId>
+  <name>Pixz</name>
   <version>1.1.0</version>
   <build>
     <plugins>
@@ -21,7 +21,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>com.example.wingallery.Launcher</mainClass>
+              <mainClass>com.example.pixz.Launcher</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -38,7 +38,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>com.example.wingallery.Launcher</mainClass>
+                  <mainClass>com.example.pixz.Launcher</mainClass>
                 </transformer>
               </transformers>
               <filters>
@@ -71,7 +71,7 @@
           <execution>
             <id>default-cli</id>
             <configuration>
-              <mainClass>com.example.wingallery.Launcher</mainClass>
+              <mainClass>com.example.pixz.Launcher</mainClass>
               <launcher>app</launcher>
               <jlinkZipName>app</jlinkZipName>
               <jlinkImageName>app</jlinkImageName>
@@ -90,33 +90,34 @@
           <execution>
             <id>msi</id>
             <configuration>
-              <name>WinGallery</name>
+              <name>Pixz</name>
               <appVersion>1.1.0</appVersion>
-              <vendor>WinGallery</vendor>
+              <vendor>Pixz</vendor>
               <destination>target/installer</destination>
               <type>MSI</type>
-              <module>com.example.wingallery/com.example.wingallery.Launcher</module>
+              <module>com.example.wingallery/com.example.pixz.Launcher</module>
               <runtimeImage>target/app</runtimeImage>
-              <icon>src/main/resources/com/example/wingallery/icon.png</icon>
+              <icon>src/main/resources/com/example/wingallery/icon.ico</icon>
               <javaOptions>
                 <option>-Dfile.encoding=UTF-8</option>
               </javaOptions>
               <winDirChooser>true</winDirChooser>
               <winMenu>true</winMenu>
               <winShortcut>true</winShortcut>
-              <winMenuGroup>WinGallery</winMenuGroup>
+              <winMenuGroup>Pixz</winMenuGroup>
             </configuration>
           </execution>
           <execution>
             <id>portable</id>
             <configuration>
-              <name>WinGallery</name>
+              <name>Pixz</name>
               <appVersion>1.1.0</appVersion>
-              <vendor>WinGallery</vendor>
+              <vendor>Pixz</vendor>
               <destination>target/portable</destination>
               <type>APP_IMAGE</type>
-              <module>com.example.wingallery/com.example.wingallery.Launcher</module>
+              <module>com.example.wingallery/com.example.pixz.Launcher</module>
               <runtimeImage>target/app</runtimeImage>
+              <icon>src/main/resources/com/example/wingallery/icon.ico</icon>
               <javaOptions>
                 <option>-Dfile.encoding=UTF-8</option>
               </javaOptions>
