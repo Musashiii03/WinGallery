@@ -1,4 +1,4 @@
-package com.example.wingallery;
+package com.example.pixz;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

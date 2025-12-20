@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Building WinGallery JAR
+echo Building Pixz JAR
 echo ========================================
 echo.
 
@@ -18,9 +18,9 @@ echo BUILD SUCCESSFUL!
 echo ========================================
 echo.
 echo Your JAR file is located at:
-echo target\WinGallery-1.1.0.jar
+echo target\Pixz-1.1.0.jar
 echo.
 echo To run the application:
-echo java -jar target\WinGallery-1.1.0.jar
+echo java -jar target\Pixz-1.1.0.jar
 echo.
 pause

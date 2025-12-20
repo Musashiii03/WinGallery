@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Building WinGallery for GitHub Release
+echo Building Pixz for GitHub Release
 echo ========================================
 echo.
 
@@ -42,7 +42,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 echo Step 5: Creating ZIP for distribution...
 cd target\portable
-powershell -Command "Compress-Archive -Path WinGallery -DestinationPath ..\WinGallery-1.1.0-Windows-Portable.zip -Force"
+powershell -Command "Compress-Archive -Path Pixz -DestinationPath ..\Pixz-1.1.0-Windows-Portable.zip -Force"
 cd ..\..
 
 echo.
@@ -51,17 +51,17 @@ echo BUILD SUCCESSFUL!
 echo ========================================
 echo.
 echo Your portable app is located at:
-echo   target\portable\WinGallery\
+echo   target\portable\Pixz\
 echo.
 echo Your ZIP for GitHub release is at:
-echo   target\WinGallery-1.1.0-Windows-Portable.zip
+echo   target\Pixz-1.1.0-Windows-Portable.zip
 echo.
 echo To upload to GitHub:
-echo 1. Go to https://github.com/YOUR_USERNAME/WinGallery/releases/new
+echo 1. Go to https://github.com/YOUR_USERNAME/Pixz/releases/new
 echo 2. Create new release with tag: v1.1.0
-echo 3. Drag and drop: target\WinGallery-1.1.0-Windows-Portable.zip
+echo 3. Drag and drop: target\Pixz-1.1.0-Windows-Portable.zip
 echo 4. Click "Update release"
 echo.
-echo Users can download, extract, and run WinGallery.exe directly!
+echo Users can download, extract, and run Pixz.exe directly!
 echo.
 pause
